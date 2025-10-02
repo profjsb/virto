@@ -1,5 +1,6 @@
-import os, asyncio
-from typing import Dict, List, AsyncGenerator, Optional
+import os
+import asyncio
+from typing import Dict, List, AsyncGenerator
 
 USE_REDIS = os.environ.get("USE_REDIS_STREAM", "false").lower() == "true"
 REDIS_URL = os.environ.get("REDIS_URL", "redis://localhost:6379/0")

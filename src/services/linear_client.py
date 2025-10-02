@@ -1,4 +1,5 @@
-import os, httpx, json
+import os
+import httpx
 
 LINEAR_API_KEY = os.environ.get("LINEAR_API_KEY")
 

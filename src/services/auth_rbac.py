@@ -1,8 +1,8 @@
 from typing import Optional, List
-from fastapi import Header, HTTPException
+from fastapi import HTTPException
 from .auth import verify_token
 from ..db import SessionLocal
-from ..db.models import UserRole, Role, User
+from ..db.models import UserRole, Role
 
 def require_auth(authorization: Optional[str]) -> dict:
     if not authorization or not authorization.lower().startswith("bearer "):

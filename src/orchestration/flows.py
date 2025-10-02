@@ -1,6 +1,7 @@
 from typing import Dict, Any
 from .markdown import render_standup, render_brainstorm, render_allhands
 from ..utils.store import save_markdown, save_json, ts
+from .dag import DAG, Node
 
 def standup_flow(context: Dict[str, Any]) -> Dict[str, Any]:
     minutes = {
@@ -48,8 +49,6 @@ def allhands_flow(context: Dict[str, Any]) -> Dict[str, Any]:
     json_path = save_json("minutes", name, doc)
     return {"markdown_path": md_path, "json_path": json_path, "markdown": md, "minutes": doc}
 
-
-from .dag import DAG, Node
 
 def meeting_cycle_dag(context: Dict[str, Any]) -> Dict[str, Any]:
     def n_brainstorm(ctx): return brainstorm_flow(ctx)

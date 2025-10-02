@@ -18,7 +18,7 @@ def run_autogen_brainstorm(idea: str, participants: List[Dict[str, str]], provid
         chat_result = autogen.GroupChat(agents=agents + [moderator], messages=[{"content": system_message, "role":"system"}], max_round=4)
         manager = autogen.GroupChatManager(groupchat=chat_result)
         # Kick off with a prompt
-        manager.initiate_chat(agents[0], message=f"Let's break down the idea and propose 3 next steps.")
+        manager.initiate_chat(agents[0], message="Let's break down the idea and propose 3 next steps.")
         transcript = [m for m in chat_result.messages]
         summary_prompt = "Summarize the group chat into decisions, risks, and 5 concrete next steps."
         summary = generate(summary_prompt, provider=provider, model=model)

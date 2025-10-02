@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Float, Boolean, DateTime, Text
+from sqlalchemy import Column, Integer, String, Float, Boolean, DateTime, Text, ForeignKey
 from sqlalchemy.sql import func
 from . import Base
 
@@ -35,8 +35,6 @@ class Run(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
 
-from sqlalchemy import ForeignKey
-from sqlalchemy.orm import relationship
 
 class User(Base):
     __tablename__ = "users"
@@ -58,8 +56,6 @@ class UsageEvent(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
 
-from sqlalchemy import ForeignKey, Table
-from sqlalchemy.orm import relationship
 
 class Role(Base):
     __tablename__ = "roles"

@@ -9,16 +9,20 @@ class Node:
 
 class DAG:
     def __init__(self, nodes: List[Node]):
-        self.nodes = {n.id: n for n in nodes}
+        self.nodes = {n.id:
+            n for n in nodes}
         # basic cycle check
         self._check_cycles()
 
     def _check_cycles(self):
         seen, stack = set(), set()
         def visit(nid):
-            if nid in stack: raise ValueError("cycle detected")
-            if nid in seen: return
-            stack.add(nid); seen.add(nid)
+            if nid in stack:
+                raise ValueError("cycle detected")
+            if nid in seen:
+                return
+            stack.add(nid)
+            seen.add(nid)
             for dep in self.nodes[nid].depends_on:
                 visit(dep)
             stack.remove(nid)
@@ -31,7 +35,8 @@ class DAG:
         while len(done) < len(self.nodes):
             progress = False
             for nid, node in self.nodes.items():
-                if nid in done: continue
+                if nid in done:
+                    continue
                 if all(dep in done for dep in node.depends_on):
                     out = node.fn({**context, **results})
                     results[nid] = out
