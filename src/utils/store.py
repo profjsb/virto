@@ -1,5 +1,6 @@
 from pathlib import Path
-import json, datetime
+import json
+import datetime
 from .s3 import upload_file, STORE_TO_S3
 
 DATA_ROOT = Path(__file__).resolve().parents[2] / "data"
@@ -24,7 +25,8 @@ def save_markdown(namespace: str, name: str, md: str):
 
 def list_namespace(namespace: str):
     p = DATA_ROOT / namespace
-    if not p.exists(): return []
+    if not p.exists():
+        return []
     return sorted([str(x) for x in p.iterdir() if x.is_file()])
 
 

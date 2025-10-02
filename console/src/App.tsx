@@ -83,50 +83,6 @@ export default function App(){
         </div>
       </section>
 
-      <section>
-        <h2>Spend (last {usage?.days ?? 30} days)</h2>
-        {usage && (
-          <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:24}}>
-            <div>
-              <h3>Total</h3>
-              <div style={{fontSize:32}}>${usage.total_cost_usd.toFixed(4)}</div>
-              <h4>By Model</h4>
-              <ul>{Object.entries(usage.by_model).map(([m,v]) => <li key={m}>{m}: ${v.toFixed(4)}</li>)}</ul>
-              <h4>By Actor</h4>
-              <ul>{Object.entries(usage.by_actor).map(([m,v]) => <li key={m}>{m}: ${v.toFixed(4)}</li>)}</ul>
-            </div>
-            <div>
-              <h3>Recent Events</h3>
-              <table style={{width:'100%'}}>
-                <thead><tr><th>ID</th><th>Model</th><th>Actor</th><th>In</th><th>Out</th><th>Cost</th><th>At</th></tr></thead>
-                <tbody>
-                  {usage.events.map(e => (
-                    <tr key={e.id}>
-                      <td>{e.id}</td><td>{e.model}</td><td>{e.actor}</td>
-                      <td>{e.input_tokens ?? '-'}</td><td>{e.output_tokens ?? '-'}</td>
-                      <td>${(e.cost_usd ?? 0).toFixed(4)}</td>
-                      <td>{e.created_at}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
-      </section>
-    </div>
-  )
-}
-
-
-      <section id='sprint'>
-        <Sprint/>
-      </section>
-
-      <section id='logs'>
-        <RunLogs/>
-      </section>
-
       <section id='spend'>
         <h2>Spend (last {usage?.days ?? 30} days)</h2>
         {usage && (
@@ -158,3 +114,14 @@ export default function App(){
           </div>
         )}
       </section>
+
+      <section id='sprint'>
+        <Sprint/>
+      </section>
+
+      <section id='logs'>
+        <RunLogs/>
+      </section>
+    </div>
+  )
+}

@@ -1,7 +1,8 @@
 from logging.config import fileConfig
 from sqlalchemy import engine_from_config, pool
 from alembic import context
-import os, sys
+import os
+import sys
 
 # add project path
 config = context.config
@@ -17,7 +18,7 @@ if db_url:
 # Import target metadata
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
-from src.db import Base  # type: ignore
+from src.db import Base  # type: ignore  # noqa: E402
 
 target_metadata = Base.metadata
 

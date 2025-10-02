@@ -1,10 +1,10 @@
-# Optional LangGraph adapter. Install: pip install langgraph langchain
-from typing import Dict, Any, List
+# Optional LangGraph adapter. Install: uv add langgraph langchain
+from typing import Dict, Any
 
 def run_langgraph_meeting_cycle(context: Dict[str, Any]) -> Dict[str, Any]:
     try:
         from langgraph.graph import StateGraph, START, END  # type: ignore
-    except Exception as e:
+    except Exception:
         return {"engine": "langgraph", "error": "langgraph not installed", "result": {}}
 
     def brainstorm(state): return {"brainstorm": {"ideas": context.get("ideas", []), "top3": context.get("top3", [])}}

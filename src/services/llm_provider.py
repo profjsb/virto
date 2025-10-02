@@ -1,8 +1,11 @@
-import os, time, httpx
-from typing import Dict, Any, Optional, Literal
+import os
+import time
+import httpx
+from typing import Optional, Literal
+
+from .usage_logger import log_usage
 
 Provider = Literal["openai", "anthropic"]
-from .usage_logger import log_usage
 
 def _env(name: str, default: Optional[str]=None) -> Optional[str]:
     v = os.environ.get(name)

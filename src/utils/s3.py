@@ -1,4 +1,5 @@
-import os, boto3
+import os
+import boto3
 from botocore.client import Config
 
 S3_BUCKET = os.environ.get("S3_BUCKET")

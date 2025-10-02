@@ -1,4 +1,6 @@
-import os, datetime, jwt
+import os
+import datetime
+import jwt
 from passlib.context import CryptContext
 
 JWT_SECRET = os.environ.get("JWT_SECRET", "dev_secret_change_me")

@@ -1,22 +1,23 @@
-from fastapi import FastAPI, HTTPException, Depends, Header
+from fastapi import FastAPI, HTTPException, Header
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from typing import List, Dict, Any, Optional
-import os, json, datetime, asyncio
+import os
+import json
+import datetime
+import asyncio
 
 from .services.policy import load_policies, spend_threshold
 from .orchestration.flows import standup_flow, brainstorm_flow, allhands_flow, meeting_cycle_dag
-from .orchestration.autogen_loop import run_autogen_brainstorm
 from .orchestration.langgraph_adapter import run_langgraph_meeting_cycle
 from .orchestration.crewai_adapter import run_crewai_brainstorm
 from .services.llm_provider import generate
 from .db import SessionLocal
-from .db.models import Approval, Artifact, User, UsageEvent, Run, RunLog, Role, UserRole
-from .services.auth import hash_password, verify_password, make_token, verify_token
-from .services.auth_rbac import require_auth, require_role, roles_for_user
-from .utils.store import list_namespace
+from .db.models import Approval, Artifact, User, Run, Role, UserRole
+from .services.auth import hash_password, verify_password, make_token
+from .services.auth_rbac import require_role, roles_for_user
 from .utils.s3 import presign as s3_presign
 from .services.event_stream import hub
 from .services.linear_client import list_teams, list_cycles, list_issues_in_cycle, create_issue
@@ -114,7 +115,9 @@ def register(inp: RegisterInput):
         if db.query(User).filter(User.email == inp.email).first():
             raise HTTPException(409, "email already registered")
         u = User(email=inp.email, password_hash=hash_password(inp.password), is_admin=False)
-        db.add(u); db.commit(); db.refresh(u)
+        db.add(u)
+        db.commit()
+        db.refresh(u)
         # first user becomes admin
         if count == 0: 
             # ensure roles table has base roles
@@ -144,14 +147,19 @@ def ensure_roles():
 def assign_role(user_id: int, role_name: str, db):
     role = db.query(Role).filter(Role.name == role_name).first()
     if not role:
-        role = Role(name=role_name); db.add(role); db.commit(); db.refresh(role)
-    db.add(UserRole(user_id=user_id, role_id=role.id)); db.commit()
+        role = Role(name=role_name)
+        db.add(role)
+        db.commit()
+        db.refresh(role)
+    db.add(UserRole(user_id=user_id, role_id=role.id))
+    db.commit()
 
 @app.post("/auth/assign-role")
 def api_assign_role(inp: AssignRoleInput, authorization: Optional[str] = Header(None)):
     require_role(authorization, ["admin"])
     with SessionLocal() as db:
-        if not db.get(User, inp.user_id): raise HTTPException(404, "user not found")
+        if not db.get(User, inp.user_id):
+            raise HTTPException(404, "user not found")
         assign_role(inp.user_id, inp.role, db)
     return {"ok": True}
 
@@ -193,7 +201,9 @@ def approvals_submit(req: ApprovalRequest, authorization: Optional[str] = Header
             status=status,
             threshold=threshold
         )
-        db.add(ap); db.commit(); db.refresh(ap)
+        db.add(ap)
+        db.commit()
+        db.refresh(ap)
         return {"id": ap.id, "status": ap.status, "threshold": ap.threshold}
 
 @app.patch("/approvals/{approval_id}/decision")
@@ -201,10 +211,13 @@ def approvals_decide(approval_id: int, approved: bool, authorization: Optional[s
     require_role(authorization, ["approver","admin"])
     with SessionLocal() as db:
         ap = db.get(Approval, approval_id)
-        if not ap: raise HTTPException(404, "not found")
+        if not ap:
+            raise HTTPException(404, "not found")
         ap.status = "approved" if approved else "rejected"
         ap.decided_at = datetime.datetime.utcnow()
-        db.add(ap); db.commit(); db.refresh(ap)
+        db.add(ap)
+        db.commit()
+        db.refresh(ap)
         return {"id": ap.id, "status": ap.status}
 
 @app.get("/ops/approvals")
@@ -221,7 +234,8 @@ def meeting_standup(m: StandupInput, authorization: Optional[str] = Header(None)
     result = standup_flow(m.model_dump())
     with SessionLocal() as db:
         art = Artifact(kind="minutes", name="standup", path=result["markdown_path"], meta=json.dumps(m.model_dump()))
-        db.add(art); db.commit()
+        db.add(art)
+        db.commit()
     return result
 
 @app.post("/meetings/brainstorm")
@@ -230,7 +244,8 @@ def meeting_brainstorm(m: BrainstormInput, authorization: Optional[str] = Header
     result = brainstorm_flow(m.model_dump())
     with SessionLocal() as db:
         art = Artifact(kind="minutes", name=f"brainstorm:{m.topic}", path=result["markdown_path"], meta=json.dumps(m.model_dump()))
-        db.add(art); db.commit()
+        db.add(art)
+        db.commit()
     return result
 
 @app.post("/meetings/allhands")
@@ -239,7 +254,8 @@ def meeting_allhands(m: AllHandsInput, authorization: Optional[str] = Header(Non
     result = allhands_flow(m.model_dump())
     with SessionLocal() as db:
         art = Artifact(kind="minutes", name=f"allhands:{m.week}", path=result["markdown_path"], meta=json.dumps(m.model_dump()))
-        db.add(art); db.commit()
+        db.add(art)
+        db.commit()
     return result
 
 @app.post("/orchestration/dag/meeting_cycle")
@@ -263,7 +279,9 @@ async def runs_start_demo(authorization: Optional[str] = Header(None)):
     require_role(authorization, ["engineer","admin"])
     with SessionLocal() as db:
         run = Run(run_type="demo", status="running", summary="Demo run")
-        db.add(run); db.commit(); db.refresh(run)
+        db.add(run)
+        db.commit()
+        db.refresh(run)
         rid = run.id
     # fire-and-forget background simulation
     async def simulate():
@@ -275,7 +293,10 @@ async def runs_start_demo(authorization: Optional[str] = Header(None)):
         await asyncio.sleep(0.5)
         await hub.publish(rid, "event:done\ndata: Completed\n\n")
         with SessionLocal() as db:
-            r = db.get(Run, rid); r.status="done"; db.add(r); db.commit()
+            r = db.get(Run, rid)
+            r.status="done"
+            db.add(r)
+            db.commit()
     asyncio.create_task(simulate())
     return {"run_id": rid}
 
