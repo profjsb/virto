@@ -19,9 +19,7 @@ jobs:
         with:
           enable-cache: true
       - name: Install deps
-        run: |
-          uv sync
-          uv add --dev ruff pytest
+        run: uv sync --all-extras
       - name: Lint
         run: uv run ruff check .
       - name: Tests
