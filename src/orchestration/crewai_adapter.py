@@ -1,4 +1,4 @@
-# Optional CrewAI adapter. Install: pip install crewai crewai-tools
+# Optional CrewAI adapter. Install: uv add crewai crewai-tools
 from typing import Dict, Any, List
 
 def run_crewai_brainstorm(idea: str) -> Dict[str, Any]:

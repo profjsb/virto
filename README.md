@@ -1,97 +1,421 @@
-# Virtual AI Organization (VO) — Bootstrap
+# Virtual AI Organization (VO)
 
-A minimal, production-friendly starter for a virtual organization staffed by AI agents. 
-It includes a governance baseline, meeting templates, JSON schemas, and a tiny API 
-to request approvals and generate a hiring plan.
+A production-ready framework for building and operating virtual organizations staffed by AI agents. This system provides governance frameworks, LLM orchestration, operational workflows, and observability tools for managing autonomous AI teams.
 
-## Quickstart
+## Overview
 
-```bash
-# Python 3.10+ recommended
-python -m venv .venv && source .venv/bin/activate
-pip install -r requirements.txt
+**Virtual AI Organization** is a FastAPI-based platform that enables you to:
 
-# Run the API (http://127.0.0.1:8000/docs)
-uvicorn src.app:app --reload
+- 🤖 **Orchestrate AI Agents** — Coordinate multiple AI personas with different roles and responsibilities
+- 📋 **Manage Workflows** — Run structured meetings (standups, brainstorms, all-hands) with configurable templates
+- 🔐 **Control Access** — JWT authentication with RBAC (admin, approver, engineer, growth, viewer roles)
+- 💰 **Track Spend** — Monitor LLM usage and costs across providers (OpenAI, Anthropic)
+- ✅ **Approve Decisions** — Policy-based approval workflows with configurable thresholds
+- 📊 **Monitor Operations** — Real-time event streaming and artifact management
+- 🔗 **Integrate Tools** — Built-in Linear integration, S3 storage, and extensible service layer
+
+## Architecture
+
+```
+├── src/                        # FastAPI application
+│   ├── app.py                 # Main API routes and endpoints
+│   ├── db/                    # SQLAlchemy models and database
+│   ├── orchestration/         # Workflow engines (DAG, LangGraph, CrewAI, AutoGen)
+│   ├── services/              # Auth, LLM providers, event streaming, Linear
+│   └── utils/                 # S3, storage, I/O utilities
+├── console/                    # React/TypeScript ops dashboard
+├── governance/                 # Machine-readable policies and constitution
+├── meetings/templates/         # Structured meeting formats
+├── personas/                   # AI agent persona definitions (JSON)
+├── schemas/                    # JSON schemas for validation
+├── alembic/                    # Database migrations
+└── docs/adr/                  # Architecture Decision Records
 ```
 
-## What’s inside
+## Quick Start
 
-- `/src` — FastAPI app + orchestration stubs
-- `/governance` — machine-readable policies
-- `/meetings/templates` — stand-up, brainstorm, all-hands
-- `/schemas` — hiring plan & persona JSON schemas
-- `/personas` — example co‑founder personas
-- `/docs/adr` — Architecture Decision Records (templates)
-- `/tests` — placeholder for unit tests
+### 1. Backend Setup
 
-## Next steps
-1. Fill in your VO Charter in `governance/constitution.md`.
-2. Connect your LLM of choice in `src/services/llm_provider.py` (env-driven).
-3. Implement the hiring plan generator with a real model call.
-4. Wire meeting flows to your chosen orchestrator in `src/orchestration/flows.py`.
-5. Add storage backends (Postgres/S3/vector DB) and observability (OpenTelemetry).
+```bash
+# Python 3.10+ required
+# Install uv if not already installed: https://docs.astral.sh/uv/
+curl -LsSf https://astral.sh/uv/install.sh | sh
 
+# Install dependencies
+uv sync
 
-## Postgres & Migrations
+# Configure database
+export DATABASE_URL=postgresql+psycopg://postgres:postgres@localhost:5432/virtual_ai_org
 
-1. Set `DATABASE_URL` in your environment, e.g.:
-   ```bash
-   export DATABASE_URL=postgresql+psycopg://postgres:postgres@localhost:5432/virtual_ai_org
-   ```
-2. Run migrations:
-   ```bash
-   alembic upgrade head
-   ```
+# Run migrations
+uv run alembic upgrade head
 
-## React Ops Console
+# Configure authentication
+export JWT_SECRET='your-secure-secret-key'
+export ALLOW_SIGNUP=true
+
+# Start API server
+uv run uvicorn src.app:app --reload
+```
+
+API documentation available at: `http://127.0.0.1:8000/docs`
+
+### 2. Frontend Setup
 
 ```bash
 cd console
 npm install
-# optional: export VITE_API_BASE=http://localhost:8000
+export VITE_API_BASE=http://localhost:8000
 npm run dev
 ```
 
+### 3. Create First User
 
-## Auth
-Set a secret and (optionally) allow open signup for first user:
 ```bash
-export JWT_SECRET='change-me'
-export ADMIN_SIGNUP_SECRET='let-me-in'  # optional
-export ALLOW_SIGNUP=true                 # allow first registration without admin secret
-```
-
-Register (one-time) via API:
-```bash
-curl -X POST localhost:8000/auth/register -H 'content-type: application/json' \
+curl -X POST localhost:8000/auth/register \
+  -H 'content-type: application/json' \
   -d '{"email":"admin@example.com","password":"admin123"}'
 ```
 
-Use the returned `access_token` as a Bearer token in the console.
+The first user is automatically assigned the `admin` role. Save the returned `access_token` for API requests.
 
-## S3 (optional)
+## Core Features
+
+### Authentication & Authorization
+
+**JWT-based authentication** with role-based access control:
+
+- **admin** — Full system access
+- **approver** — Approve spending and decisions
+- **engineer** — Run technical workflows
+- **growth** — Business and product operations
+- **viewer** — Read-only access
+
+```bash
+# Assign roles
+curl -X POST localhost:8000/auth/assign-role \
+  -H 'authorization: Bearer <TOKEN>' \
+  -H 'content-type: application/json' \
+  -d '{"user_id":2,"role":"engineer"}'
+```
+
+### LLM Provider Integration
+
+Supports multiple LLM providers with unified interface:
+
+```bash
+# Configure providers
+export OPENAI_API_KEY='sk-...'
+export ANTHROPIC_API_KEY='sk-ant-...'
+
+# Optional: Custom pricing for spend tracking
+export OPENAI_PRICE_IN=0.000001
+export OPENAI_PRICE_OUT=0.000002
+export ANTHROPIC_PRICE_IN=0.000003
+export ANTHROPIC_PRICE_OUT=0.000015
+```
+
+### Orchestration Systems
+
+**Multiple workflow engines supported:**
+
+1. **Custom DAG Engine** (`src/orchestration/dag.py`)
+2. **LangGraph Adapter** — Graph-based workflows
+3. **CrewAI Adapter** — Multi-agent collaboration
+4. **AutoGen Adapter** — Conversational agents
+
+```bash
+# Run meeting cycle workflow
+curl -X POST localhost:8000/orchestration/dag/meeting_cycle \
+  -H 'authorization: Bearer <TOKEN>' \
+  -H 'content-type: application/json' \
+  -d '{"topic":"MVP kickoff"}'
+```
+
+### Approval Workflows
+
+Policy-based approval system with auto-approval thresholds:
+
+```bash
+# Submit approval request
+curl -X POST localhost:8000/approvals/submit \
+  -H 'authorization: Bearer <TOKEN>' \
+  -H 'content-type: application/json' \
+  -d '{
+    "description":"Cloud infrastructure upgrade",
+    "amount_usd":250.00,
+    "justification":"Scale for production launch"
+  }'
+```
+
+Requests below the policy threshold are auto-approved. Configure in `governance/policies.yaml`.
+
+### Meeting Templates
+
+Structured meeting workflows with markdown output:
+
+- **Standup** — Daily sync (yesterday, today, blockers)
+- **Brainstorm** — Idea generation and prioritization
+- **All-Hands** — Weekly metrics, updates, risks, lessons
+
+```bash
+# Run brainstorm meeting
+curl -X POST localhost:8000/meetings/brainstorm \
+  -H 'authorization: Bearer <TOKEN>' \
+  -H 'content-type: application/json' \
+  -d '{
+    "topic":"Q4 Product Strategy",
+    "owner":"ceo",
+    "ideas":["Feature A","Feature B","Feature C"]
+  }'
+```
+
+### Real-Time Event Streaming
+
+Server-Sent Events (SSE) for live run monitoring:
+
+```bash
+# Start a demo run
+curl -X POST localhost:8000/runs/start_demo \
+  -H 'authorization: Bearer <TOKEN>'
+
+# Stream events (in browser or EventSource client)
+# GET /streams/runs/{run_id}
+```
+
+### Linear Integration
+
+Project management integration for AI-driven development:
+
+```bash
+# Configure Linear
+export LINEAR_API_KEY='lin_api_...'
+
+# List teams
+curl localhost:8000/linear/teams \
+  -H 'authorization: Bearer <TOKEN>'
+
+# Create issue
+curl -X POST localhost:8000/linear/issues \
+  -H 'authorization: Bearer <TOKEN>' \
+  -H 'content-type: application/json' \
+  -d '{
+    "team_id":"TEAM-123",
+    "title":"Implement feature X",
+    "description":"Technical details..."
+  }'
+```
+
+## Storage Options
+
+### PostgreSQL (Required)
+
+Primary data store for users, approvals, artifacts, usage events:
+
+```bash
+export DATABASE_URL=postgresql+psycopg://user:pass@host:5432/dbname
+alembic upgrade head
+```
+
+### S3 (Optional)
+
+Artifact storage for meeting minutes and outputs:
+
 ```bash
 export STORE_TO_S3=true
 export S3_BUCKET=your-bucket
-export AWS_ACCESS_KEY_ID=...
+export AWS_ACCESS_KEY_ID=AKIA...
 export AWS_SECRET_ACCESS_KEY=...
 export AWS_REGION=us-east-1
-# optional for MinIO or custom endpoint
+
+# For MinIO or custom S3-compatible storage
 export S3_ENDPOINT_URL=http://localhost:9000
 ```
 
-## DAG Orchestration
-A simple LangGraph-style DAG lives in `src/orchestration/dag.py`.
-Run the built-in meeting cycle:
+### Redis (Optional)
+
+Event pub/sub for distributed deployments:
+
 ```bash
-curl -X POST localhost:8000/orchestration/dag/meeting_cycle \
- -H 'authorization: Bearer <TOKEN>' -H 'content-type: application/json' -d '{"topic":"MVP kickoff"}'
+export REDIS_URL=redis://localhost:6379
 ```
 
-## Spend Dashboard
-LLM calls log basic token counts and estimated cost to `usage_events`. View in console under “Spend”.
-You can override per-token prices via env vars: `OPENAI_PRICE_IN`, `OPENAI_PRICE_OUT`, `ANTHROPIC_PRICE_IN`, `ANTHROPIC_PRICE_OUT`.
+## Deployment
 
+### Docker Compose
 
-**Read next:** [docs/HOWTO.md](docs/HOWTO.md)
+```bash
+docker-compose up -d
+```
+
+Includes PostgreSQL, Redis, API, and console services.
+
+### Fly.io
+
+```bash
+fly deploy --config fly.api.toml
+fly deploy --config fly.console.toml
+```
+
+### Render
+
+Uses `render.yaml` for infrastructure-as-code deployment.
+
+## Configuration Reference
+
+### Environment Variables
+
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `DATABASE_URL` | Yes | PostgreSQL connection string |
+| `JWT_SECRET` | Yes | Secret key for JWT signing |
+| `ALLOW_SIGNUP` | No | Enable open registration (default: false) |
+| `ADMIN_SIGNUP_SECRET` | No | Secret for admin registration |
+| `OPENAI_API_KEY` | No | OpenAI API key |
+| `ANTHROPIC_API_KEY` | No | Anthropic API key |
+| `STORE_TO_S3` | No | Enable S3 storage (default: false) |
+| `S3_BUCKET` | No | S3 bucket name |
+| `LINEAR_API_KEY` | No | Linear API key |
+| `REDIS_URL` | No | Redis connection string |
+
+### Governance Files
+
+- `governance/constitution.md` — Organizational charter
+- `governance/policies.yaml` — Machine-readable policies (spending thresholds, etc.)
+- `personas/*.json` — AI agent persona definitions
+- `schemas/*.schema.json` — Validation schemas for personas and hiring plans
+
+## Development
+
+### Project Structure
+
+```
+src/
+├── app.py                  # API routes and dependency injection
+├── db/
+│   ├── __init__.py        # Database session factory
+│   └── models.py          # SQLAlchemy models
+├── orchestration/
+│   ├── dag.py             # Custom DAG engine
+│   ├── flows.py           # Meeting workflow implementations
+│   ├── langgraph_adapter.py
+│   ├── crewai_adapter.py
+│   └── autogen_loop.py
+├── services/
+│   ├── auth.py            # JWT and password hashing
+│   ├── auth_rbac.py       # Role-based access control
+│   ├── llm_provider.py    # Unified LLM interface
+│   ├── usage_logger.py    # Token and cost tracking
+│   ├── event_stream.py    # SSE pub/sub hub
+│   ├── linear_client.py   # Linear GraphQL client
+│   └── policy.py          # Policy loading and evaluation
+└── utils/
+    ├── s3.py              # S3 operations
+    ├── store.py           # Namespace-based storage
+    └── io.py              # File I/O utilities
+```
+
+### Running Tests
+
+```bash
+uv run pytest tests/
+```
+
+### Database Migrations
+
+```bash
+# Create new migration
+uv run alembic revision -m "description"
+
+# Apply migrations
+uv run alembic upgrade head
+
+# Rollback
+uv run alembic downgrade -1
+```
+
+## Use Cases
+
+### 1. AI Team Hiring
+
+Generate structured hiring plans for AI-powered teams:
+
+```bash
+curl -X POST localhost:8000/hiring/plan \
+  -H 'authorization: Bearer <TOKEN>' \
+  -H 'content-type: application/json' \
+  -d '{
+    "idea":"Build marketplace for local services",
+    "budget_usd":50000,
+    "deadline_days":90,
+    "goal":"Launch MVP with 100 users"
+  }'
+```
+
+Returns role definitions, workstreams, and metrics.
+
+### 2. Automated Standups
+
+Daily team synchronization without human coordination:
+
+```bash
+curl -X POST localhost:8000/meetings/standup \
+  -H 'authorization: Bearer <TOKEN>' \
+  -H 'content-type: application/json' \
+  -d '{
+    "date":"2025-10-02",
+    "attendees":["cto","ceo","cxo"],
+    "yesterday":["Shipped auth system"],
+    "today":["Implement payment flow"],
+    "blockers":["Waiting on Stripe credentials"]
+  }'
+```
+
+### 3. Spend Monitoring
+
+Track LLM costs across the organization:
+
+```bash
+# View in console at /spend
+# Or query database directly
+SELECT provider, model, SUM(cost_usd)
+FROM usage_events
+GROUP BY provider, model;
+```
+
+## API Reference
+
+Full interactive API documentation available at `/docs` when running the server.
+
+**Key Endpoints:**
+
+- `POST /auth/register` — User registration
+- `POST /auth/login` — Authentication
+- `POST /hiring/plan` — Generate AI hiring plan
+- `POST /approvals/submit` — Submit approval request
+- `PATCH /approvals/{id}/decision` — Approve/reject
+- `POST /meetings/{standup,brainstorm,allhands}` — Run meetings
+- `POST /orchestration/dag/meeting_cycle` — Execute workflow
+- `GET /streams/runs/{run_id}` — Stream run events (SSE)
+- `GET /ops/{approvals,minutes}` — List operational artifacts
+- `GET /linear/{teams,cycles,issues}` — Linear integration
+
+## Roadmap
+
+- [ ] Vector database integration for semantic search
+- [ ] OpenTelemetry observability
+- [ ] Multi-tenant support
+- [ ] Webhook system for external integrations
+- [ ] Advanced workflow editor UI
+- [ ] Persona marketplace
+- [ ] Budget forecasting and alerts
+
+## Contributing
+
+See [docs/HOWTO.md](docs/HOWTO.md) for development guidelines.
+
+Architecture decisions are documented in [docs/adr/](docs/adr/).
+
+## License
+
+See [LICENSE](LICENSE) file for details.

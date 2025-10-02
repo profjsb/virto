@@ -1,4 +1,4 @@
-# Optional LangGraph adapter. Install: pip install langgraph langchain
+# Optional LangGraph adapter. Install: uv add langgraph langchain
 from typing import Dict, Any, List
 
 def run_langgraph_meeting_cycle(context: Dict[str, Any]) -> Dict[str, Any]:
