@@ -1,0 +1,21 @@
+spend_thresholds:
+  auto_approve_usd: 50
+  human_review_usd: 50-500
+  executive_review_usd: >500
+
+forbidden_actions:
+  - external_data_sharing_without_dpa
+  - mass_email_without_unsubscribe
+
+required_checks:
+  code_deploy:
+    - unit_tests_pass
+    - license_scan_clean
+    - security_scan_low
+  user_research:
+    - consent_captured
+    - pii_redacted
+
+escalation_matrix:
+  legal: [GeneralCounsel]
+  security: [CISO]

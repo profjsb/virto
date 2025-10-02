@@ -1,0 +1,73 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Hiring Plan",
+  "type": "object",
+  "properties": {
+    "roles": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "role_id": {
+            "type": "string"
+          },
+          "persona_ref": {
+            "type": "string"
+          },
+          "mission": {
+            "type": "string"
+          },
+          "deliverables": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "tools": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "metrics": {
+            "type": "object"
+          }
+        },
+        "required": [
+          "role_id",
+          "mission",
+          "deliverables"
+        ]
+      }
+    },
+    "workstreams": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "owner": {
+            "type": "string"
+          },
+          "milestone": {
+            "type": "string"
+          },
+          "eta_days": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "name",
+          "owner",
+          "milestone"
+        ]
+      }
+    }
+  },
+  "required": [
+    "roles",
+    "workstreams"
+  ]
+}

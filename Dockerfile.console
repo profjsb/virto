@@ -1,0 +1,17 @@
+# React console
+FROM node:18-alpine AS build
+WORKDIR /app/console
+COPY console/package*.json ./
+COPY console/tsconfig.json console/vite.config.ts ./
+COPY console/src ./src
+COPY console/index.html ./index.html
+# Build with configurable API base; defaults to http://localhost:8000
+ARG VITE_API_BASE=http://localhost:8000
+ENV VITE_API_BASE=$VITE_API_BASE
+RUN npm ci && npm run build
+
+FROM node:18-alpine
+WORKDIR /app/console
+COPY --from=build /app/console/dist ./dist
+EXPOSE 5173
+CMD ["npx","serve","-s","dist","-l","5173"]

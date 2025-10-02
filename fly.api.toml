@@ -1,0 +1,29 @@
+# Fly.io config for the API
+app = "vo-api-REPLACEME"  # change this to your unique app name
+
+primary_region = "iad"
+
+[build]
+  dockerfile = "Dockerfile.api"
+
+[env]
+  # Set these via `fly secrets set` for production!
+  JWT_SECRET = "change-me"
+  ALLOW_SIGNUP = "false"
+  USE_REDIS_STREAM = "true"
+  REDIS_URL = "redis://REPLACEME:6379/0"
+  DATABASE_URL = "postgresql+psycopg://postgres:postgres@REPLACEME:5432/virtual_ai_org"
+  # Optional S3/MinIO
+  # STORE_TO_S3 = "true"
+  # S3_BUCKET = "vo-artifacts"
+  # AWS_ACCESS_KEY_ID = "REPLACEME"
+  # AWS_SECRET_ACCESS_KEY = "REPLACEME"
+  # AWS_REGION = "us-east-1"
+  # S3_ENDPOINT_URL = "https://s3.amazonaws.com"
+
+[http_service]
+  internal_port = 8000
+  force_https = true
+  auto_stop_machines = true
+  auto_start_machines = true
+  min_machines_running = 1
