@@ -1,10 +1,11 @@
-# Optional CrewAI adapter. Install: pip install crewai crewai-tools
-from typing import Dict, Any, List
+# Optional CrewAI adapter. Install: uv add crewai crewai-tools
+from typing import Any, Dict
+
 
 def run_crewai_brainstorm(idea: str) -> Dict[str, Any]:
     try:
-        from crewai import Agent, Task, Crew  # type: ignore
-    except Exception as e:
+        from crewai import Agent, Crew, Task  # type: ignore
+    except Exception:
         return {"engine": "crewai", "error": "crewai not installed", "result": {}}
     planner = Agent(role="Planner", goal="Break down idea", backstory="Product thinker")
     builder = Agent(role="Builder", goal="Propose implementation steps", backstory="Engineer")

@@ -1,8 +1,10 @@
-import os, asyncio
-from typing import Dict, List, AsyncGenerator, Optional
+import asyncio
+import os
+from typing import AsyncGenerator, Dict, List
 
 USE_REDIS = os.environ.get("USE_REDIS_STREAM", "false").lower() == "true"
 REDIS_URL = os.environ.get("REDIS_URL", "redis://localhost:6379/0")
+
 
 class RunStreamHub:
     def __init__(self):
@@ -26,6 +28,7 @@ class RunStreamHub:
     async def publish(self, run_id: int, message: str):
         if USE_REDIS:
             from redis import asyncio as aioredis  # lazy import
+
             r = aioredis.from_url(REDIS_URL, decode_responses=True)
             await r.publish(f"runs:{run_id}", message)
         else:
@@ -35,6 +38,7 @@ class RunStreamHub:
         """Yield SSE messages from local queue or Redis pubsub."""
         if USE_REDIS:
             from redis import asyncio as aioredis
+
             r = aioredis.from_url(REDIS_URL, decode_responses=True)
             pubsub = r.pubsub()
             await pubsub.subscribe(f"runs:{run_id}")
@@ -58,5 +62,6 @@ class RunStreamHub:
                     yield msg
             finally:
                 self.unsubscribe_local(run_id, q)
+
 
 hub = RunStreamHub()

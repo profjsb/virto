@@ -1,7 +1,7 @@
 spend_thresholds:
   auto_approve_usd: 50
-  human_review_usd: 50-500
-  executive_review_usd: >500
+  human_review_usd: "50-500"
+  executive_review_usd: ">500"
 
 forbidden_actions:
   - external_data_sharing_without_dpa

@@ -14,11 +14,14 @@ This guide walks you through standing up the system end-to-end: API, DB, auth, L
 
 ### Backend
 ```bash
-python -m venv .venv && source .venv/bin/activate
-pip install -r requirements.txt
+# Install uv if not already installed
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# Install dependencies
+uv sync
 
 export DATABASE_URL=postgresql+psycopg://postgres:postgres@localhost:5432/virtual_ai_org
-alembic upgrade head
+uv run alembic upgrade head
 
 export JWT_SECRET='change-me'
 export ALLOW_SIGNUP=true   # only for first registration
@@ -32,7 +35,7 @@ export LINEAR_API_KEY=lin_api_...
 # S3 (optional)
 # export STORE_TO_S3=true S3_BUCKET=your-bucket AWS_ACCESS_KEY_ID=... AWS_SECRET_ACCESS_KEY=... AWS_REGION=us-east-1
 # export S3_ENDPOINT_URL=http://localhost:9000  # if using MinIO
-uvicorn src.app:app --reload  # http://localhost:8000/docs
+uv run uvicorn src.app:app --reload  # http://localhost:8000/docs
 ```
 
 ### Create Admin & Roles
@@ -64,14 +67,14 @@ curl -X POST localhost:8000/auth/assign-role \
 
 ### LangGraph (optional)
 ```bash
-pip install langgraph langchain
+uv add langgraph langchain
 ```
 - Endpoint: `POST /orchestration/langgraph/meeting_cycle`
 - Code: `src/orchestration/langgraph_adapter.py`
 
 ### CrewAI (optional)
 ```bash
-pip install crewai crewai-tools
+uv add crewai crewai-tools
 ```
 - Endpoint: `POST /orchestration/crewai/brainstorm`
 - Code: `src/orchestration/crewai_adapter.py`

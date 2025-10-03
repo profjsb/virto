@@ -1,11 +1,13 @@
-from typing import Callable, Dict, Any, List
 from dataclasses import dataclass, field
+from typing import Any, Callable, Dict, List
+
 
 @dataclass
 class Node:
     id: str
     fn: Callable[[Dict[str, Any]], Dict[str, Any]]
     depends_on: List[str] = field(default_factory=list)
+
 
 class DAG:
     def __init__(self, nodes: List[Node]):
@@ -15,13 +17,18 @@ class DAG:
 
     def _check_cycles(self):
         seen, stack = set(), set()
+
         def visit(nid):
-            if nid in stack: raise ValueError("cycle detected")
-            if nid in seen: return
-            stack.add(nid); seen.add(nid)
+            if nid in stack:
+                raise ValueError("cycle detected")
+            if nid in seen:
+                return
+            stack.add(nid)
+            seen.add(nid)
             for dep in self.nodes[nid].depends_on:
                 visit(dep)
             stack.remove(nid)
+
         for nid in list(self.nodes.keys()):
             visit(nid)
 
@@ -31,7 +38,8 @@ class DAG:
         while len(done) < len(self.nodes):
             progress = False
             for nid, node in self.nodes.items():
-                if nid in done: continue
+                if nid in done:
+                    continue
                 if all(dep in done for dep in node.depends_on):
                     out = node.fn({**context, **results})
                     results[nid] = out
