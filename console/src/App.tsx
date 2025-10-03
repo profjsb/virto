@@ -77,7 +77,7 @@ export default function App(){
         <div>
           <h2>Minutes</h2>
           <ul>
-            {minutes.map(m => <li key={m.id}><code>{m.name}</code> — {m.download ? <a href={m.download.startsWith('http') ? m.download : API_BASE + m.download} target="_blank">download</a> : <small>{m.path}</small>}</li>)}
+            {minutes.map(m => <li key={m.id}><code>{m.name}</code> — {m.download ? <a href={m.download.startsWith('http') ? m.download : API_BASE + m.download} target="_blank" rel="noreferrer">download</a> : <small>{m.path}</small>}</li>)}
           </ul>
           <p style={{marginTop:12}}>API base: <code>{API_BASE}</code></p>
         </div>

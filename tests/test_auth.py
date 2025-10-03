@@ -22,7 +22,6 @@ def test_register_user(client: TestClient, test_roles):
     )
     assert response.status_code == 200
     data = response.json()
-    assert data["email"] == "newuser@example.com"
     assert "access_token" in data
     assert "password" not in data
 
@@ -36,7 +35,6 @@ def test_login_success(client: TestClient, test_user):
     assert response.status_code == 200
     data = response.json()
     assert "access_token" in data
-    assert data["email"] == "test@example.com"
 
 
 @pytest.mark.unit

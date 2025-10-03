@@ -8,29 +8,38 @@ import pytest
 @pytest.mark.unit
 def test_assign_role_to_user(client, admin_auth_token, test_user, db_session, test_roles):
     """Test that admin can assign roles to users."""
+    from src.db.models import User
+
     response = client.post(
         "/auth/assign-role",
         headers={"Authorization": f"Bearer {admin_auth_token}"},
-        json={"user_id": test_user.id, "role": "growth"},
+        json={"user_id": test_user, "role": "growth"},
     )
     assert response.status_code == 200
 
-    # Verify role was assigned
-    db_session.refresh(test_user)
-    role_names = [r.name for r in test_user.roles]
+    # Verify role was assigned by fetching user from database
+    user = db_session.get(User, test_user)
+    db_session.refresh(user)
+    role_names = [r.name for r in user.roles]
     assert "growth" in role_names
 
 
 @pytest.mark.unit
-def test_user_has_initial_role(test_user):
+def test_user_has_initial_role(test_user, db_session):
     """Test that test user has engineer role."""
-    role_names = [r.name for r in test_user.roles]
+    from src.db.models import User
+
+    user = db_session.get(User, test_user)
+    role_names = [r.name for r in user.roles]
     assert "engineer" in role_names
 
 
 @pytest.mark.unit
-def test_admin_user_has_admin_role(admin_user):
+def test_admin_user_has_admin_role(admin_user, db_session):
     """Test that admin user has admin role."""
-    role_names = [r.name for r in admin_user.roles]
+    from src.db.models import User
+
+    user = db_session.get(User, admin_user)
+    role_names = [r.name for r in user.roles]
     assert "admin" in role_names
-    assert admin_user.is_admin is True
+    assert user.is_admin is True

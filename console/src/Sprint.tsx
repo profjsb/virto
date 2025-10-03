@@ -60,7 +60,7 @@ export default function Sprint(){
               <td>{i.title}</td>
               <td>{i.state?.name}</td>
               <td>{i.assignee?.name || '-'}</td>
-              <td><a href={i.url} target="_blank">open</a></td>
+              <td><a href={i.url} target="_blank" rel="noreferrer">open</a></td>
             </tr>
           ))}
         </tbody>

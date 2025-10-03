@@ -11,7 +11,7 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from sqlalchemy import func
 
-from .db import SessionLocal
+from . import db
 from .db.models import Approval, Artifact, Role, Run, User, UserRole
 from .orchestration.crewai_adapter import run_crewai_brainstorm
 from .orchestration.flows import allhands_flow, brainstorm_flow, meeting_cycle_dag, standup_flow
@@ -121,29 +121,29 @@ def health():
 def register(inp: RegisterInput):
     allow_signup = os.environ.get("ALLOW_SIGNUP", "false").lower() == "true"
     admin_secret = os.environ.get("ADMIN_SIGNUP_SECRET")
-    with SessionLocal() as db:
-        count = db.query(func.count(User.id)).scalar()
+    with db.SessionLocal() as session:
+        count = session.query(func.count(User.id)).scalar()
         if not allow_signup and count > 0 and inp.admin_secret != admin_secret:
             raise HTTPException(403, "signups disabled")
-        if db.query(User).filter(User.email == inp.email).first():
+        if session.query(User).filter(User.email == inp.email).first():
             raise HTTPException(409, "email already registered")
         u = User(email=inp.email, password_hash=hash_password(inp.password), is_admin=False)
-        db.add(u)
-        db.commit()
-        db.refresh(u)
+        session.add(u)
+        session.commit()
+        session.refresh(u)
         # first user becomes admin
         if count == 0:
             # ensure roles table has base roles
             ensure_roles()
-            assign_role(u.id, "admin", db)
+            assign_role(u.id, "admin", session)
         token = make_token(sub=str(u.id), is_admin=("admin" in roles_for_user(u.id)))
         return {"access_token": token}
 
 
 @app.post("/auth/login")
 def login(inp: LoginInput):
-    with SessionLocal() as db:
-        u = db.query(User).filter(User.email == inp.email).first()
+    with db.SessionLocal() as session:
+        u = session.query(User).filter(User.email == inp.email).first()
         if not u or not verify_password(inp.password, u.password_hash):
             raise HTTPException(401, "invalid credentials")
         token = make_token(sub=str(u.id), is_admin=("admin" in roles_for_user(u.id)))
@@ -152,12 +152,12 @@ def login(inp: LoginInput):
 
 def ensure_roles():
     base = ["admin", "approver", "engineer", "growth", "viewer"]
-    with SessionLocal() as db:
-        exists = {r.name for r in db.query(Role).all()}
+    with db.SessionLocal() as session:
+        exists = {r.name for r in session.query(Role).all()}
         for name in base:
             if name not in exists:
-                db.add(Role(name=name))
-        db.commit()
+                session.add(Role(name=name))
+        session.commit()
 
 
 def assign_role(user_id: int, role_name: str, db):
@@ -174,10 +174,10 @@ def assign_role(user_id: int, role_name: str, db):
 @app.post("/auth/assign-role")
 def api_assign_role(inp: AssignRoleInput, authorization: Optional[str] = Header(None)):
     require_role(authorization, ["admin"])
-    with SessionLocal() as db:
-        if not db.get(User, inp.user_id):
+    with db.SessionLocal() as session:
+        if not session.get(User, inp.user_id):
             raise HTTPException(404, "user not found")
-        assign_role(inp.user_id, inp.role, db)
+        assign_role(inp.user_id, inp.role, session)
     return {"ok": True}
 
 
@@ -246,7 +246,7 @@ def approvals_submit(req: ApprovalRequest, authorization: Optional[str] = Header
     policy = load_policies()
     threshold = spend_threshold(policy)
     status = "auto_approved" if req.amount_usd <= threshold else "pending"
-    with SessionLocal() as db:
+    with db.SessionLocal() as session:
         ap = Approval(
             description=req.description,
             amount_usd=req.amount_usd,
@@ -254,32 +254,32 @@ def approvals_submit(req: ApprovalRequest, authorization: Optional[str] = Header
             status=status,
             threshold=threshold,
         )
-        db.add(ap)
-        db.commit()
-        db.refresh(ap)
+        session.add(ap)
+        session.commit()
+        session.refresh(ap)
         return {"id": ap.id, "status": ap.status, "threshold": ap.threshold}
 
 
 @app.patch("/approvals/{approval_id}/decision")
 def approvals_decide(approval_id: int, approved: bool, authorization: Optional[str] = Header(None)):
     require_role(authorization, ["approver", "admin"])
-    with SessionLocal() as db:
-        ap = db.get(Approval, approval_id)
+    with db.SessionLocal() as session:
+        ap = session.get(Approval, approval_id)
         if not ap:
             raise HTTPException(404, "not found")
         ap.status = "approved" if approved else "rejected"
         ap.decided_at = datetime.datetime.utcnow()
-        db.add(ap)
-        db.commit()
-        db.refresh(ap)
+        session.add(ap)
+        session.commit()
+        session.refresh(ap)
         return {"id": ap.id, "status": ap.status}
 
 
 @app.get("/ops/approvals")
 def list_approvals(authorization: Optional[str] = Header(None)):
     require_role(authorization, ["viewer", "engineer", "growth", "approver", "admin"])
-    with SessionLocal() as db:
-        rows = db.query(Approval).order_by(Approval.id.desc()).limit(200).all()
+    with db.SessionLocal() as session:
+        rows = session.query(Approval).order_by(Approval.id.desc()).limit(200).all()
         return [
             {
                 "id": r.id,
@@ -297,15 +297,15 @@ def list_approvals(authorization: Optional[str] = Header(None)):
 def meeting_standup(m: StandupInput, authorization: Optional[str] = Header(None)):
     require_role(authorization, ["engineer", "viewer", "admin"])
     result = standup_flow(m.model_dump())
-    with SessionLocal() as db:
+    with db.SessionLocal() as session:
         art = Artifact(
             kind="minutes",
             name="standup",
             path=result["markdown_path"],
             meta=json.dumps(m.model_dump()),
         )
-        db.add(art)
-        db.commit()
+        session.add(art)
+        session.commit()
     return result
 
 
@@ -313,15 +313,15 @@ def meeting_standup(m: StandupInput, authorization: Optional[str] = Header(None)
 def meeting_brainstorm(m: BrainstormInput, authorization: Optional[str] = Header(None)):
     require_role(authorization, ["engineer", "growth", "viewer", "admin"])
     result = brainstorm_flow(m.model_dump())
-    with SessionLocal() as db:
+    with db.SessionLocal() as session:
         art = Artifact(
             kind="minutes",
             name=f"brainstorm:{m.topic}",
             path=result["markdown_path"],
             meta=json.dumps(m.model_dump()),
         )
-        db.add(art)
-        db.commit()
+        session.add(art)
+        session.commit()
     return result
 
 
@@ -329,15 +329,15 @@ def meeting_brainstorm(m: BrainstormInput, authorization: Optional[str] = Header
 def meeting_allhands(m: AllHandsInput, authorization: Optional[str] = Header(None)):
     require_role(authorization, ["viewer", "admin"])
     result = allhands_flow(m.model_dump())
-    with SessionLocal() as db:
+    with db.SessionLocal() as session:
         art = Artifact(
             kind="minutes",
             name=f"allhands:{m.week}",
             path=result["markdown_path"],
             meta=json.dumps(m.model_dump()),
         )
-        db.add(art)
-        db.commit()
+        session.add(art)
+        session.commit()
     return result
 
 
@@ -363,11 +363,11 @@ def run_crewai(idea: Dict[str, str], authorization: Optional[str] = Header(None)
 @app.post("/runs/start_demo")
 async def runs_start_demo(authorization: Optional[str] = Header(None)):
     require_role(authorization, ["engineer", "admin"])
-    with SessionLocal() as db:
+    with db.SessionLocal() as session:
         run = Run(run_type="demo", status="running", summary="Demo run")
-        db.add(run)
-        db.commit()
-        db.refresh(run)
+        session.add(run)
+        session.commit()
+        session.refresh(run)
         rid = run.id
 
     # fire-and-forget background simulation
@@ -379,11 +379,11 @@ async def runs_start_demo(authorization: Optional[str] = Header(None)):
         await hub.publish(rid, "event:log\ndata: Executing step 1\n\n")
         await asyncio.sleep(0.5)
         await hub.publish(rid, "event:done\ndata: Completed\n\n")
-        with SessionLocal() as db:
-            r = db.get(Run, rid)
+        with db.SessionLocal() as session:
+            r = session.get(Run, rid)
             r.status = "done"
-            db.add(r)
-            db.commit()
+            session.add(r)
+            session.commit()
 
     asyncio.create_task(simulate())
     return {"run_id": rid}
@@ -409,9 +409,9 @@ async def stream_run(run_id: int, authorization: Optional[str] = Header(None)):
 @app.get("/ops/minutes")
 def ops_minutes(authorization: Optional[str] = Header(None)):
     require_role(authorization, ["viewer", "engineer", "growth", "approver", "admin"])
-    with SessionLocal() as db:
+    with db.SessionLocal() as session:
         rows = (
-            db.query(Artifact)
+            session.query(Artifact)
             .filter(Artifact.kind == "minutes")
             .order_by(Artifact.id.desc())
             .limit(200)

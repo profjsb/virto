@@ -2,6 +2,7 @@
 Pytest configuration and shared fixtures.
 """
 
+import os
 from datetime import datetime
 from typing import Generator
 
@@ -16,8 +17,8 @@ from src.db import Base
 from src.db.models import Role, User, UserRole
 from src.services.auth import hash_password
 
-# Use in-memory SQLite for tests
-TEST_DATABASE_URL = "sqlite:///:memory:"
+# Use file-based SQLite for tests to avoid connection issues
+TEST_DATABASE_URL = "sqlite:///./test.db"
 
 
 @pytest.fixture(scope="function")
@@ -26,7 +27,6 @@ def test_engine():
     engine = create_engine(
         TEST_DATABASE_URL,
         connect_args={"check_same_thread": False},
-        poolclass=StaticPool,
     )
 
     # Enable foreign keys for SQLite
@@ -43,6 +43,10 @@ def test_engine():
     yield engine
     Base.metadata.drop_all(bind=engine)
     engine.dispose()
+
+    # Clean up test database file
+    if os.path.exists("test.db"):
+        os.remove("test.db")
 
 
 @pytest.fixture(scope="function")
@@ -77,56 +81,78 @@ def client(test_engine) -> TestClient:
 
 
 @pytest.fixture(scope="function")
-def test_roles(db_session) -> dict:
-    """Create test roles."""
-    roles_data = ["admin", "approver", "engineer", "growth", "viewer"]
-    roles = {}
-    for role_name in roles_data:
-        role = Role(name=role_name)
-        db_session.add(role)
-        roles[role_name] = role
-    db_session.commit()
-    return roles
+def test_roles(test_engine) -> dict:
+    """Create test roles and return their IDs."""
+    TestSessionLocal = sessionmaker(  # noqa: N806
+        autocommit=False, autoflush=False, bind=test_engine
+    )
+    session = TestSessionLocal()
+    try:
+        roles_data = ["admin", "approver", "engineer", "growth", "viewer"]
+        role_ids = {}
+        for role_name in roles_data:
+            role = Role(name=role_name)
+            session.add(role)
+            session.flush()  # Get the ID
+            role_ids[role_name] = role.id
+        session.commit()
+        return role_ids
+    finally:
+        session.close()
 
 
 @pytest.fixture(scope="function")
-def test_user(db_session, test_roles) -> User:
-    """Create a test user with engineer role."""
-    user = User(
-        email="test@example.com",
-        password_hash=hash_password("testpass"),
-        is_admin=False,
-        created_at=datetime.utcnow(),
+def test_user(test_engine, test_roles) -> int:
+    """Create a test user with engineer role and return user ID."""
+    TestSessionLocal = sessionmaker(  # noqa: N806
+        autocommit=False, autoflush=False, bind=test_engine
     )
-    db_session.add(user)
-    db_session.commit()
+    session = TestSessionLocal()
+    try:
+        user = User(
+            email="test@example.com",
+            password_hash=hash_password("testpass"),
+            is_admin=False,
+            created_at=datetime.utcnow(),
+        )
+        session.add(user)
+        session.flush()  # Get the ID
 
-    # Add engineer role
-    user_role = UserRole(user_id=user.id, role_id=test_roles["engineer"].id)
-    db_session.add(user_role)
-    db_session.commit()
+        # Add engineer role
+        user_role = UserRole(user_id=user.id, role_id=test_roles["engineer"])
+        session.add(user_role)
+        session.commit()
 
-    return user
+        return user.id
+    finally:
+        session.close()
 
 
 @pytest.fixture(scope="function")
-def admin_user(db_session, test_roles) -> User:
-    """Create a test admin user."""
-    user = User(
-        email="admin@example.com",
-        password_hash=hash_password("adminpass"),
-        is_admin=True,
-        created_at=datetime.utcnow(),
+def admin_user(test_engine, test_roles) -> int:
+    """Create a test admin user and return user ID."""
+    TestSessionLocal = sessionmaker(  # noqa: N806
+        autocommit=False, autoflush=False, bind=test_engine
     )
-    db_session.add(user)
-    db_session.commit()
+    session = TestSessionLocal()
+    try:
+        user = User(
+            email="admin@example.com",
+            password_hash=hash_password("adminpass"),
+            is_admin=True,
+            created_at=datetime.utcnow(),
+        )
+        session.add(user)
+        session.flush()  # Get the ID
 
-    # Add admin role
-    user_role = UserRole(user_id=user.id, role_id=test_roles["admin"].id)
-    db_session.add(user_role)
-    db_session.commit()
+        # Add admin role
+        user_role = UserRole(user_id=user.id, role_id=test_roles["admin"])
+        session.add(user_role)
+        session.commit()
 
-    return user
+        return user.id
+    finally:
+        session.close()
 
 
 @pytest.fixture(scope="function")

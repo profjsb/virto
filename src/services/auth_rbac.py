@@ -2,7 +2,7 @@ from typing import List, Optional
 
 from fastapi import HTTPException
 
-from ..db import SessionLocal
+from .. import db
 from ..db.models import Role, UserRole
 from .auth import verify_token
 
@@ -19,9 +19,9 @@ def require_auth(authorization: Optional[str]) -> dict:
 
 
 def roles_for_user(user_id: int) -> List[str]:
-    with SessionLocal() as db:
+    with db.SessionLocal() as session:
         rows = (
-            db.query(UserRole, Role)
+            session.query(UserRole, Role)
             .join(Role, UserRole.role_id == Role.id)
             .filter(UserRole.user_id == user_id)
             .all()
