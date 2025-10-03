@@ -317,9 +317,43 @@ src/
 
 ### Running Tests
 
+The project includes comprehensive testing for both backend and frontend:
+
 ```bash
-uv run pytest tests/
+# Quick test run (recommended before PRs)
+./scripts/run_tests.sh --quick
+
+# Full test suite with integration tests
+./scripts/run_tests.sh --full
+
+# Backend tests only
+make test-backend
+# or
+uv run pytest -v
+
+# Frontend tests only
+make test-frontend
+# or
+cd console && npm run test
+
+# Run all tests
+make test-all
+
+# Generate coverage reports
+make test-backend-cov  # Backend coverage -> htmlcov/index.html
+make test-frontend-cov # Frontend coverage -> console/coverage/
+
+# Run linters and formatters
+make lint        # Check code style
+make lint-fix    # Auto-fix linting issues
+make format      # Format code
+
+# Run specific test types
+uv run pytest -m unit         # Unit tests only
+uv run pytest -m integration  # Integration tests only
 ```
+
+For detailed testing documentation, see [TESTING.md](TESTING.md)
 
 ### Database Migrations
 

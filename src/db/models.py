@@ -1,4 +1,5 @@
 from sqlalchemy import Column, Integer, String, Float, Boolean, DateTime, Text, ForeignKey
+from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from . import Base
 
@@ -43,6 +44,9 @@ class User(Base):
     password_hash = Column(String(255), nullable=False)
     is_admin = Column(Boolean, nullable=False, server_default="0")
     created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    # Relationship to roles through UserRole
+    roles = relationship("Role", secondary="user_roles", backref="users", lazy="select")
 
 class UsageEvent(Base):
     __tablename__ = "usage_events"
