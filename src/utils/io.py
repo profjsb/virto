@@ -1,6 +1,7 @@
-from pathlib import Path
 import json
+from pathlib import Path
 from typing import Any
+
 
 def write_json(path: str, obj: Any):
     p = Path(path)

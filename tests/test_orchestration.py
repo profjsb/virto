@@ -1,13 +1,16 @@
 """
 Tests for orchestration layer.
 """
+
 import pytest
+
 from src.orchestration.dag import DAG, Node
 
 
 @pytest.mark.unit
 def test_dag_creation():
     """Test creating a simple DAG."""
+
     def dummy_fn(ctx):
         return {"result": "value"}
 
@@ -20,6 +23,7 @@ def test_dag_creation():
 @pytest.mark.unit
 def test_dag_single_node_execution():
     """Test DAG with single node."""
+
     def simple_fn(ctx):
         return {"output": "hello"}
 
@@ -39,6 +43,7 @@ def test_dag_execution_order():
         def fn(ctx):
             results.append(name)
             return {name: "done"}
+
         return fn
 
     node1 = Node(id="node1", fn=make_fn("node1"))
@@ -58,6 +63,7 @@ def test_dag_execution_order():
 @pytest.mark.unit
 def test_dag_with_context():
     """Test DAG nodes receive context."""
+
     def use_context(ctx):
         return {"sum": ctx.get("a", 0) + ctx.get("b", 0)}
 
@@ -71,6 +77,7 @@ def test_dag_with_context():
 @pytest.mark.unit
 def test_dag_cyclic_dependency_detection():
     """Test that DAG detects cyclic dependencies."""
+
     def dummy_fn(ctx):
         return {"result": "value"}
 
@@ -78,4 +85,4 @@ def test_dag_cyclic_dependency_detection():
     node2 = Node(id="node2", fn=dummy_fn, depends_on=["node1"])
 
     with pytest.raises(ValueError, match="cycle detected"):
-        dag = DAG(nodes=[node1, node2])
+        DAG(nodes=[node1, node2])

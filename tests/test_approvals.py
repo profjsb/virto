@@ -1,10 +1,9 @@
 """
 Tests for approval workflows.
 """
+
 import pytest
-from datetime import datetime
 from fastapi.testclient import TestClient
-from src.db.models import Approval
 
 
 @pytest.mark.integration
@@ -13,10 +12,7 @@ def test_submit_approval_under_threshold(client: TestClient, auth_token, db_sess
     response = client.post(
         "/approvals/submit",
         headers={"Authorization": f"Bearer {auth_token}"},
-        json={
-            "description": "Small expense",
-            "amount_usd": 25.0
-        }
+        json={"description": "Small expense", "amount_usd": 25.0},
     )
     assert response.status_code == 200
     data = response.json()
@@ -30,10 +26,7 @@ def test_submit_approval_over_threshold(client: TestClient, auth_token, db_sessi
     response = client.post(
         "/approvals/submit",
         headers={"Authorization": f"Bearer {auth_token}"},
-        json={
-            "description": "Large expense",
-            "amount_usd": 500.0
-        }
+        json={"description": "Large expense", "amount_usd": 500.0},
     )
     assert response.status_code == 200
     data = response.json()
@@ -48,18 +41,15 @@ def test_list_approvals(client: TestClient, auth_token, db_session):
     client.post(
         "/approvals/submit",
         headers={"Authorization": f"Bearer {auth_token}"},
-        json={"description": "Test 1", "amount_usd": 25.0}
+        json={"description": "Test 1", "amount_usd": 25.0},
     )
     client.post(
         "/approvals/submit",
         headers={"Authorization": f"Bearer {auth_token}"},
-        json={"description": "Test 2", "amount_usd": 200.0}
+        json={"description": "Test 2", "amount_usd": 200.0},
     )
 
-    response = client.get(
-        "/ops/approvals",
-        headers={"Authorization": f"Bearer {auth_token}"}
-    )
+    response = client.get("/ops/approvals", headers={"Authorization": f"Bearer {auth_token}"})
     assert response.status_code == 200
     approvals = response.json()
     assert len(approvals) >= 2

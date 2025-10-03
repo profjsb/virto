@@ -1,7 +1,9 @@
 """
 Tests for service layer components.
 """
+
 import pytest
+
 from src.services.auth import hash_password, verify_password
 from src.services.policy import spend_threshold
 

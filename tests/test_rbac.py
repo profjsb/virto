@@ -1,8 +1,8 @@
 """
 Tests for role-based access control.
 """
+
 import pytest
-from src.db.models import User, UserRole
 
 
 @pytest.mark.unit
@@ -11,7 +11,7 @@ def test_assign_role_to_user(client, admin_auth_token, test_user, db_session, te
     response = client.post(
         "/auth/assign-role",
         headers={"Authorization": f"Bearer {admin_auth_token}"},
-        json={"user_id": test_user.id, "role": "growth"}
+        json={"user_id": test_user.id, "role": "growth"},
     )
     assert response.status_code == 200
 

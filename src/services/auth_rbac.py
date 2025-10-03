@@ -1,8 +1,11 @@
-from typing import Optional, List
+from typing import List, Optional
+
 from fastapi import HTTPException
-from .auth import verify_token
+
 from ..db import SessionLocal
-from ..db.models import UserRole, Role
+from ..db.models import Role, UserRole
+from .auth import verify_token
+
 
 def require_auth(authorization: Optional[str]) -> dict:
     if not authorization or not authorization.lower().startswith("bearer "):
@@ -14,10 +17,17 @@ def require_auth(authorization: Optional[str]) -> dict:
     except Exception:
         raise HTTPException(401, "invalid token")
 
+
 def roles_for_user(user_id: int) -> List[str]:
     with SessionLocal() as db:
-        rows = db.query(UserRole, Role).join(Role, UserRole.role_id == Role.id).filter(UserRole.user_id == user_id).all()
+        rows = (
+            db.query(UserRole, Role)
+            .join(Role, UserRole.role_id == Role.id)
+            .filter(UserRole.user_id == user_id)
+            .all()
+        )
         return [r.Role.name if hasattr(r, "Role") else r[1].name for r in rows]
+
 
 def require_role(authorization: Optional[str], allowed: List[str]):
     claims = require_auth(authorization)

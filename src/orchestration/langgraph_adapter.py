@@ -1,15 +1,23 @@
 # Optional LangGraph adapter. Install: uv add langgraph langchain
-from typing import Dict, Any
+from typing import Any, Dict
+
 
 def run_langgraph_meeting_cycle(context: Dict[str, Any]) -> Dict[str, Any]:
     try:
-        from langgraph.graph import StateGraph, START, END  # type: ignore
+        from langgraph.graph import END, START, StateGraph  # type: ignore
     except Exception:
         return {"engine": "langgraph", "error": "langgraph not installed", "result": {}}
 
-    def brainstorm(state): return {"brainstorm": {"ideas": context.get("ideas", []), "top3": context.get("top3", [])}}
-    def standup(state): return {"standup": {"today": context.get("today", []), "blockers": context.get("blockers", [])}}
-    def allhands(state): return {"allhands": {"metrics": context.get("metrics", {})}}
+    def brainstorm(state):
+        return {"brainstorm": {"ideas": context.get("ideas", []), "top3": context.get("top3", [])}}
+
+    def standup(state):
+        return {
+            "standup": {"today": context.get("today", []), "blockers": context.get("blockers", [])}
+        }
+
+    def allhands(state):
+        return {"allhands": {"metrics": context.get("metrics", {})}}
 
     workflow = StateGraph(dict)
     workflow.add_node("brainstorm", brainstorm)

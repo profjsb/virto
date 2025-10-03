@@ -1,7 +1,9 @@
-from sqlalchemy import Column, Integer, String, Float, Boolean, DateTime, Text, ForeignKey
+from sqlalchemy import Boolean, Column, DateTime, Float, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
+
 from . import Base
+
 
 class Approval(Base):
     __tablename__ = "approvals"
@@ -9,23 +11,27 @@ class Approval(Base):
     description = Column(Text, nullable=False)
     amount_usd = Column(Float, nullable=False)
     justification = Column(Text, nullable=False)
-    status = Column(String(32), nullable=False, default="pending")  # pending|approved|rejected|auto_approved
+    status = Column(
+        String(32), nullable=False, default="pending"
+    )  # pending|approved|rejected|auto_approved
     threshold = Column(Float, nullable=False, default=50.0)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     decided_at = Column(DateTime(timezone=True), nullable=True)
 
+
 class Artifact(Base):
     __tablename__ = "artifacts"
     id = Column(Integer, primary_key=True, index=True)
-    kind = Column(String(64), nullable=False)   # minutes|plan|run|other
+    kind = Column(String(64), nullable=False)  # minutes|plan|run|other
     name = Column(String(255), nullable=False)
-    path = Column(Text, nullable=False)         # file path where persisted (md/json/etc)
-    storage = Column(String(16), nullable=False, server_default='local')
+    path = Column(Text, nullable=False)  # file path where persisted (md/json/etc)
+    storage = Column(String(16), nullable=False, server_default="local")
     s3_bucket = Column(String(255), nullable=True)
     s3_key = Column(String(512), nullable=True)
     content_type = Column(String(128), nullable=True)
-    meta = Column(Text, nullable=True)          # json string for extra metadata
+    meta = Column(Text, nullable=True)  # json string for extra metadata
     created_at = Column(DateTime(timezone=True), server_default=func.now())
+
 
 class Run(Base):
     __tablename__ = "runs"
@@ -34,7 +40,6 @@ class Run(Base):
     status = Column(String(32), nullable=False, default="created")
     summary = Column(Text, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
-
 
 
 class User(Base):
@@ -48,11 +53,12 @@ class User(Base):
     # Relationship to roles through UserRole
     roles = relationship("Role", secondary="user_roles", backref="users", lazy="select")
 
+
 class UsageEvent(Base):
     __tablename__ = "usage_events"
     id = Column(Integer, primary_key=True, index=True)
     run_id = Column(Integer, ForeignKey("runs.id"), nullable=True)
-    actor = Column(String(128), nullable=True)           # persona/agent name
+    actor = Column(String(128), nullable=True)  # persona/agent name
     model = Column(String(128), nullable=True)
     input_tokens = Column(Integer, nullable=True)
     output_tokens = Column(Integer, nullable=True)
@@ -60,17 +66,18 @@ class UsageEvent(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
 
-
 class Role(Base):
     __tablename__ = "roles"
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String(64), unique=True, nullable=False)
+
 
 class UserRole(Base):
     __tablename__ = "user_roles"
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"))
     role_id = Column(Integer, ForeignKey("roles.id"))
+
 
 class RunLog(Base):
     __tablename__ = "run_logs"

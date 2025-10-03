@@ -1,20 +1,20 @@
 """
 Pytest configuration and shared fixtures.
 """
-import os
-import pytest
+
 from datetime import datetime
 from typing import Generator
+
+import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine, event
 from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.pool import StaticPool
 
 from src.app import app
-from src.db import Base, SessionLocal
-from src.db.models import User, Role, UserRole
+from src.db import Base
+from src.db.models import Role, User, UserRole
 from src.services.auth import hash_password
-
 
 # Use in-memory SQLite for tests
 TEST_DATABASE_URL = "sqlite:///:memory:"
@@ -38,6 +38,7 @@ def test_engine():
 
     # Import models to ensure they're registered
     from src.db import models  # noqa: F401
+
     Base.metadata.create_all(bind=engine)
     yield engine
     Base.metadata.drop_all(bind=engine)
@@ -47,7 +48,7 @@ def test_engine():
 @pytest.fixture(scope="function")
 def db_session(test_engine) -> Generator[Session, None, None]:
     """Create a test database session."""
-    TestSessionLocal = sessionmaker(
+    TestSessionLocal = sessionmaker(  # noqa: N806
         autocommit=False, autoflush=False, bind=test_engine
     )
     session = TestSessionLocal()
@@ -63,8 +64,9 @@ def client(test_engine) -> TestClient:
     """Create a test client with database override."""
     # Patch SessionLocal in the db module
     import src.db
+
     original_sessionlocal = src.db.SessionLocal
-    TestSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=test_engine)
+    TestSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=test_engine)  # noqa: N806
     src.db.SessionLocal = TestSessionLocal
 
     with TestClient(app) as test_client:
@@ -94,7 +96,7 @@ def test_user(db_session, test_roles) -> User:
         email="test@example.com",
         password_hash=hash_password("testpass"),
         is_admin=False,
-        created_at=datetime.utcnow()
+        created_at=datetime.utcnow(),
     )
     db_session.add(user)
     db_session.commit()
@@ -114,7 +116,7 @@ def admin_user(db_session, test_roles) -> User:
         email="admin@example.com",
         password_hash=hash_password("adminpass"),
         is_admin=True,
-        created_at=datetime.utcnow()
+        created_at=datetime.utcnow(),
     )
     db_session.add(user)
     db_session.commit()
@@ -131,8 +133,7 @@ def admin_user(db_session, test_roles) -> User:
 def auth_token(client, test_user) -> str:
     """Get an auth token for test user."""
     response = client.post(
-        "/auth/login",
-        json={"email": "test@example.com", "password": "testpass"}
+        "/auth/login", json={"email": "test@example.com", "password": "testpass"}
     )
     return response.json()["access_token"]
 
@@ -141,8 +142,7 @@ def auth_token(client, test_user) -> str:
 def admin_auth_token(client, admin_user) -> str:
     """Get an auth token for admin user."""
     response = client.post(
-        "/auth/login",
-        json={"email": "admin@example.com", "password": "adminpass"}
+        "/auth/login", json={"email": "admin@example.com", "password": "adminpass"}
     )
     return response.json()["access_token"]
 
@@ -152,10 +152,7 @@ def sample_policy():
     """Sample policy data for testing."""
     return {
         "version": "1.0",
-        "spend_thresholds": {
-            "auto_approve_usd": 100.0,
-            "monthly_budget_usd": 10000.0
-        }
+        "spend_thresholds": {"auto_approve_usd": 100.0, "monthly_budget_usd": 10000.0},
     }
 
 

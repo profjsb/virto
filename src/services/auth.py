@@ -1,5 +1,6 @@
-import os
 import datetime
+import os
+
 import jwt
 from passlib.context import CryptContext
 
@@ -10,13 +11,16 @@ JWT_EXPIRES_MIN = int(os.environ.get("JWT_EXPIRES_MIN", "120"))
 
 pwd = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
+
 def hash_password(password: str) -> str:
     return pwd.hash(password)
+
 
 def verify_password(password: str, hashed: str) -> bool:
     return pwd.verify(password, hashed)
 
-def make_token(sub: str, is_admin: bool=False) -> str:
+
+def make_token(sub: str, is_admin: bool = False) -> str:
     now = datetime.datetime.utcnow()
     payload = {
         "iss": JWT_ISSUER,
@@ -24,9 +28,12 @@ def make_token(sub: str, is_admin: bool=False) -> str:
         "sub": sub,
         "adm": is_admin,
         "iat": now,
-        "exp": now + datetime.timedelta(minutes=JWT_EXPIRES_MIN)
+        "exp": now + datetime.timedelta(minutes=JWT_EXPIRES_MIN),
     }
     return jwt.encode(payload, JWT_SECRET, algorithm="HS256")
 
+
 def verify_token(token: str):
-    return jwt.decode(token, JWT_SECRET, algorithms=["HS256"], audience=JWT_AUDIENCE, issuer=JWT_ISSUER)
+    return jwt.decode(
+        token, JWT_SECRET, algorithms=["HS256"], audience=JWT_AUDIENCE, issuer=JWT_ISSUER
+    )
