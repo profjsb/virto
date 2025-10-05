@@ -20,7 +20,7 @@ def upgrade():
         sa.Column('id', sa.Integer(), primary_key=True),
         sa.Column('email', sa.String(length=255), nullable=False, unique=True),
         sa.Column('password_hash', sa.String(length=255), nullable=False),
-        sa.Column('is_admin', sa.Boolean(), nullable=False, server_default=sa.text('0')),
+        sa.Column('is_admin', sa.Boolean(), nullable=False, server_default=sa.text('FALSE')),
         sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('CURRENT_TIMESTAMP')),
     )
     op.create_table(

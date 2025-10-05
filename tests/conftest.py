@@ -16,24 +16,30 @@ from src.db import Base
 from src.db.models import Role, User, UserRole
 from src.services.auth import hash_password
 
-# Use file-based SQLite for tests to avoid connection issues
-TEST_DATABASE_URL = "sqlite:///./test.db"
+# Use PostgreSQL from env if available, fall back to SQLite for local dev
+TEST_DATABASE_URL = os.environ.get("DATABASE_URL", "sqlite:///./test.db")
 
 
 @pytest.fixture(scope="function")
 def test_engine():
     """Create a test database engine."""
+    # Use different connect_args based on database type
+    is_sqlite = TEST_DATABASE_URL.startswith("sqlite")
+    connect_args = {"check_same_thread": False} if is_sqlite else {}
+
     engine = create_engine(
         TEST_DATABASE_URL,
-        connect_args={"check_same_thread": False},
+        connect_args=connect_args,
     )
 
-    # Enable foreign keys for SQLite
-    @event.listens_for(engine, "connect")
-    def set_sqlite_pragma(dbapi_conn, connection_record):
-        cursor = dbapi_conn.cursor()
-        cursor.execute("PRAGMA foreign_keys=ON")
-        cursor.close()
+    # Enable foreign keys for SQLite only
+    if is_sqlite:
+
+        @event.listens_for(engine, "connect")
+        def set_sqlite_pragma(dbapi_conn, connection_record):
+            cursor = dbapi_conn.cursor()
+            cursor.execute("PRAGMA foreign_keys=ON")
+            cursor.close()
 
     # Import models to ensure they're registered
     from src.db import models  # noqa: F401
@@ -43,8 +49,8 @@ def test_engine():
     Base.metadata.drop_all(bind=engine)
     engine.dispose()
 
-    # Clean up test database file
-    if os.path.exists("test.db"):
+    # Clean up test database file (SQLite only)
+    if is_sqlite and os.path.exists("test.db"):
         os.remove("test.db")
 
 

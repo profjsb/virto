@@ -1,5 +1,5 @@
 # Fly.io config for the Console
-app = "virto-red-water-5691"  # change to your unique app name
+app = "virto-console-red-water-5691"  # change to your unique app name
 
 primary_region = "sjc"
 
