@@ -17,9 +17,7 @@ from src.db.models import Role, User, UserRole
 from src.services.auth import hash_password
 
 # Use PostgreSQL from env if available, fall back to SQLite for local dev
-TEST_DATABASE_URL = os.environ.get(
-    "DATABASE_URL", "sqlite:///./test.db"
-)
+TEST_DATABASE_URL = os.environ.get("DATABASE_URL", "sqlite:///./test.db")
 
 
 @pytest.fixture(scope="function")
@@ -36,6 +34,7 @@ def test_engine():
 
     # Enable foreign keys for SQLite only
     if is_sqlite:
+
         @event.listens_for(engine, "connect")
         def set_sqlite_pragma(dbapi_conn, connection_record):
             cursor = dbapi_conn.cursor()
