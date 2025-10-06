@@ -7,8 +7,8 @@ import os
 import pytest
 
 from src.services.auth import hash_password, verify_password
+from src.services.notion_client import create_page, list_pages, search_workspace
 from src.services.policy import spend_threshold
-from src.services.notion_client import search_workspace, list_pages, create_page
 
 
 @pytest.mark.unit

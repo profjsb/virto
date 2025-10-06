@@ -20,6 +20,7 @@ from .services.auth import hash_password, make_token, verify_password
 from .services.auth_rbac import require_role, roles_for_user
 from .services.event_stream import hub
 from .services.linear_client import create_issue, list_cycles, list_issues_in_cycle, list_teams
+from .services.llm_provider import generate
 from .services.notion_client import (
     append_to_page,
     create_page,
@@ -28,7 +29,6 @@ from .services.notion_client import (
     search_workspace,
     update_page,
 )
-from .services.llm_provider import generate
 from .services.policy import load_policies, spend_threshold
 from .utils.s3 import presign as s3_presign
 
