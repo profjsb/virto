@@ -21,6 +21,14 @@ from .services.auth_rbac import require_role, roles_for_user
 from .services.event_stream import hub
 from .services.linear_client import create_issue, list_cycles, list_issues_in_cycle, list_teams
 from .services.llm_provider import generate
+from .services.notion_client import (
+    append_to_page,
+    create_page,
+    get_page,
+    list_pages,
+    search_workspace,
+    update_page,
+)
 from .services.policy import load_policies, spend_threshold
 from .utils.s3 import presign as s3_presign
 
@@ -109,6 +117,28 @@ class LinearIssueCreate(BaseModel):
     team_id: str
     title: str
     description: Optional[str] = None
+
+
+class NotionSearchInput(BaseModel):
+    query: str
+    limit: Optional[int] = 10
+
+
+class NotionPageCreate(BaseModel):
+    title: str
+    content: str
+    parent_id: Optional[str] = None
+
+
+class NotionPageUpdate(BaseModel):
+    page_id: str
+    title: Optional[str] = None
+    content: Optional[str] = None
+
+
+class NotionAppendInput(BaseModel):
+    page_id: str
+    content: str
 
 
 @app.get("/health")
@@ -463,3 +493,63 @@ def linear_issues(team_id: str, cycle_id: str, authorization: Optional[str] = He
 def linear_create_issue(inp: LinearIssueCreate, authorization: Optional[str] = Header(None)):
     require_role(authorization, ["engineer", "growth", "admin"])
     return create_issue(inp.team_id, inp.title, inp.description)
+
+
+# -------- Notion endpoints --------
+@app.get("/notion/pages")
+def notion_pages(limit: int = 100, authorization: Optional[str] = Header(None)):
+    """List pages in Notion workspace."""
+    require_role(authorization, ["viewer", "engineer", "growth", "admin"])
+    return list_pages(limit)
+
+
+@app.post("/notion/search")
+def notion_search(inp: NotionSearchInput, authorization: Optional[str] = Header(None)):
+    """Search across Notion workspace."""
+    require_role(authorization, ["viewer", "engineer", "growth", "admin"])
+    return search_workspace(inp.query, inp.limit)
+
+
+@app.get("/notion/pages/{page_id}")
+def notion_get_page(page_id: str, authorization: Optional[str] = Header(None)):
+    """Get a specific Notion page by ID."""
+    require_role(authorization, ["viewer", "engineer", "growth", "admin"])
+    return get_page(page_id)
+
+
+@app.post("/notion/pages")
+def notion_create_page(inp: NotionPageCreate, authorization: Optional[str] = Header(None)):
+    """Create a new Notion page."""
+    require_role(authorization, ["engineer", "growth", "admin"])
+    page = create_page(inp.title, inp.content, inp.parent_id)
+
+    # Store as artifact for tracking
+    with db.SessionLocal() as session:
+        art = Artifact(
+            kind="notion_page",
+            name=inp.title,
+            path=page.get("url"),
+            meta=json.dumps({"page_id": page.get("id"), "parent_id": inp.parent_id}),
+        )
+        session.add(art)
+        session.commit()
+
+    return page
+
+
+@app.patch("/notion/pages/{page_id}")
+def notion_update_page(
+    page_id: str, inp: NotionPageUpdate, authorization: Optional[str] = Header(None)
+):
+    """Update an existing Notion page."""
+    require_role(authorization, ["engineer", "growth", "admin"])
+    return update_page(page_id, inp.title, inp.content)
+
+
+@app.post("/notion/pages/{page_id}/append")
+def notion_append_page(
+    page_id: str, inp: NotionAppendInput, authorization: Optional[str] = Header(None)
+):
+    """Append content to an existing Notion page."""
+    require_role(authorization, ["engineer", "growth", "admin"])
+    return append_to_page(page_id, inp.content)

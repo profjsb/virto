@@ -12,7 +12,8 @@ A production-ready framework for building and operating virtual organizations st
 - 💰 **Track Spend** — Monitor LLM usage and costs across providers (OpenAI, Anthropic)
 - ✅ **Approve Decisions** — Policy-based approval workflows with configurable thresholds
 - 📊 **Monitor Operations** — Real-time event streaming and artifact management
-- 🔗 **Integrate Tools** — Built-in Linear integration, S3 storage, and extensible service layer
+- 🔗 **Integrate Tools** — Built-in Linear and Notion integrations, S3 storage, and extensible service layer
+- 🧠 **Capture Memory** — Store organizational knowledge in Notion for searchable institutional memory
 
 ## Architecture
 
@@ -205,6 +206,39 @@ curl -X POST localhost:8000/linear/issues \
     "description":"Technical details..."
   }'
 ```
+
+### Notion Integration
+
+**Institutional memory capture** via Notion MCP API for searchable knowledge management:
+
+```bash
+# Configure Notion (get OAuth token from Notion MCP connection)
+export NOTION_OAUTH_TOKEN='...'
+export NOTION_MCP_URL='https://mcp.notion.com/mcp'  # default
+
+# Search workspace
+curl -X POST localhost:8000/notion/search \
+  -H 'authorization: Bearer <TOKEN>' \
+  -H 'content-type: application/json' \
+  -d '{"query":"engineering","limit":10}'
+
+# Create page for meeting minutes
+curl -X POST localhost:8000/notion/pages \
+  -H 'authorization: Bearer <TOKEN>' \
+  -H 'content-type: application/json' \
+  -d '{
+    "title":"Standup 2025-10-06",
+    "content":"# Daily Standup\n\n## Yesterday\n- Completed API integration\n\n## Today\n- Testing deployment"
+  }'
+
+# Append to existing page
+curl -X POST localhost:8000/notion/pages/{page_id}/append \
+  -H 'authorization: Bearer <TOKEN>' \
+  -H 'content-type: application/json' \
+  -d '{"content":"## Follow-up\n- Review PR #123"}'
+```
+
+**Setup**: Follow [Notion MCP setup guide](https://developers.notion.com/docs/get-started-with-mcp) to connect your workspace and obtain OAuth token. Enable mock mode for testing: `export NOTION_MOCK=true`
 
 ## Storage Options
 
