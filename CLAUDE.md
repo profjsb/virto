@@ -35,6 +35,7 @@ Backend (Python/FastAPI):
     ├── usage_logger.py   → Token/cost tracking
     ├── event_stream.py   → SSE pub/sub hub
     ├── linear_client.py  → Linear GraphQL client
+    ├── notion_client.py  → Notion MCP API client
     └── policy.py         → Policy loading/evaluation
   src/utils/              → Utilities (S3, storage, I/O)
 
@@ -96,7 +97,33 @@ result = generate(
 
 This automatically logs tokens and costs to `usage_events` table.
 
-### 4. Event Streaming
+### 4. Notion Integration
+
+Capture institutional memory via Notion MCP API:
+
+```python
+from src.services.notion_client import create_page, search_workspace, append_to_page
+
+# Create a new Notion page
+page = create_page(
+    title="Meeting Minutes",
+    content="# Meeting Notes\n\nDiscussion points...",
+    parent_id=None  # optional: parent page/database ID
+)
+
+# Search workspace
+results = search_workspace(query="engineering", limit=10)
+
+# Append to existing page
+append_to_page(page_id="abc123", content="## Follow-up\n\nAction items...")
+```
+
+Environment variables:
+- `NOTION_OAUTH_TOKEN`: OAuth token from Notion MCP connection
+- `NOTION_MCP_URL`: MCP server URL (default: https://mcp.notion.com/mcp)
+- `NOTION_MOCK`: Set to "true" for testing without real API
+
+### 5. Event Streaming
 
 Publish events to connected clients:
 
@@ -108,7 +135,7 @@ await hub.publish(run_id, "event:log\ndata: Status update\n\n")
 
 Clients subscribe via `GET /streams/runs/{run_id}` (SSE endpoint).
 
-### 5. Artifact Storage
+### 6. Artifact Storage
 
 Store meeting minutes and outputs:
 
@@ -234,6 +261,8 @@ Optional for full functionality:
 export OPENAI_API_KEY=sk-...
 export ANTHROPIC_API_KEY=sk-ant-...
 export LINEAR_API_KEY=lin_api_...
+export NOTION_OAUTH_TOKEN=...
+export NOTION_MCP_URL=https://mcp.notion.com/mcp
 export STORE_TO_S3=true
 export S3_BUCKET=my-bucket
 export REDIS_URL=redis://localhost:6379
@@ -366,6 +395,7 @@ This system is designed to BE OPERATED by AI agents, not just to operate them. K
 4. **Role-based access**: Agents get different permissions (engineer vs viewer)
 5. **Usage tracking**: Monitor and limit AI spending per run/actor
 6. **Linear integration**: Agents can create issues, track cycles
+7. **Notion integration**: Capture institutional memory in searchable knowledge base
 
 An AI agent could:
 - Register as a user
@@ -373,6 +403,8 @@ An AI agent could:
 - Call `/hiring/plan` to generate a team
 - Call `/meetings/standup` daily
 - Create Linear issues via `/linear/issues`
+- Store meeting minutes in Notion via `/notion/pages`
+- Search organizational knowledge via `/notion/search`
 - Monitor costs via usage_events table
 - Submit approvals via `/approvals/submit`
 
@@ -397,7 +429,8 @@ If you encounter:
 3. **Auth errors**: Ask if they set `JWT_SECRET`
 4. **S3 errors**: Ask if they want local or S3 storage
 5. **Linear errors**: Ask if they have a Linear API key
-6. **Unclear requirements**: Ask for examples or user stories
+6. **Notion errors**: Ask if they have configured NOTION_OAUTH_TOKEN
+7. **Unclear requirements**: Ask for examples or user stories
 
 ## Resources
 
@@ -405,12 +438,13 @@ If you encounter:
 - SQLAlchemy docs: https://docs.sqlalchemy.org/
 - Alembic docs: https://alembic.sqlalchemy.org/
 - Linear API: https://developers.linear.app/docs/graphql/working-with-the-graphql-api
+- Notion MCP: https://developers.notion.com/docs/mcp
 - LangGraph: https://langchain-ai.github.io/langgraph/
 - CrewAI: https://docs.crewai.com/
 - AutoGen: https://microsoft.github.io/autogen/
 
 ---
 
-**Last Updated**: 2025-10-02
+**Last Updated**: 2025-10-06
 **Target Audience**: AI assistants (Claude, GPT-4, etc.) working on this codebase
 **Maintained By**: Project contributors
