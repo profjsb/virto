@@ -202,7 +202,10 @@ def create_database_entry(database_id: str, properties: dict):
     Returns:
         Created entry object
     """
-    return mcp_request("notion/create_database_entry", {
-        "database_id": database_id,
-        "properties": properties,
-    })
+    return mcp_request(
+        "notion/create_database_entry",
+        {
+            "database_id": database_id,
+            "properties": properties,
+        },
+    )

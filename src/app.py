@@ -538,14 +538,18 @@ def notion_create_page(inp: NotionPageCreate, authorization: Optional[str] = Hea
 
 
 @app.patch("/notion/pages/{page_id}")
-def notion_update_page(page_id: str, inp: NotionPageUpdate, authorization: Optional[str] = Header(None)):
+def notion_update_page(
+    page_id: str, inp: NotionPageUpdate, authorization: Optional[str] = Header(None)
+):
     """Update an existing Notion page."""
     require_role(authorization, ["engineer", "growth", "admin"])
     return update_page(page_id, inp.title, inp.content)
 
 
 @app.post("/notion/pages/{page_id}/append")
-def notion_append_page(page_id: str, inp: NotionAppendInput, authorization: Optional[str] = Header(None)):
+def notion_append_page(
+    page_id: str, inp: NotionAppendInput, authorization: Optional[str] = Header(None)
+):
     """Append content to an existing Notion page."""
     require_role(authorization, ["engineer", "growth", "admin"])
     return append_to_page(page_id, inp.content)

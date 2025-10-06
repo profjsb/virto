@@ -101,10 +101,7 @@ def test_notion_mock_create_page():
     """Test Notion create page in mock mode."""
     os.environ["NOTION_MOCK"] = "true"
 
-    page = create_page(
-        title="Test Page",
-        content="# Test Content\n\nThis is a test."
-    )
+    page = create_page(title="Test Page", content="# Test Content\n\nThis is a test.")
 
     assert isinstance(page, dict)
     assert "id" in page
